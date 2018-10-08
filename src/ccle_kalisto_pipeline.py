@@ -7,17 +7,11 @@ import CGAT.Experiment as E
 import CGATPipelines.Pipeline as P
 import CGAT.Sra as Sra
 
-# load options from the config file
 PARAMS = P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 
-# add configuration values from associated pipelines
-#
-# 1. pipeline_annotations: any parameters will be added with the
-#    prefix "annotations_". The interface will be updated with
-#    "annotations_dir" to point to the absolute path names.
 PARAMS.update(P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py",
@@ -26,17 +20,6 @@ PARAMS.update(P.peekParameters(
     update_interface=True))
 
 
-# if necessary, update the PARAMS dictionary in any modules file.
-# e.g.:
-#
-# import CGATPipelines.PipelineGeneset as PipelineGeneset
-# PipelineGeneset.PARAMS = PARAMS
-#
-# Note that this is a hack and deprecated, better pass all
-# parameters that are needed by a function explicitely.
-
-# -----------------------------------------------
-# Utility functions
 def connect():
     '''utility function to connect to database.
 
@@ -56,8 +39,7 @@ def connect():
     return dbh
 
 
-# ---------------------------------------------------
-# Specific pipeline tasks
+#v23 transcriptome version
 @transform("gencode.v23.transcripts.fa.gz",
 	   suffix(".fa.gz"),
 	   ".idx")
@@ -67,7 +49,7 @@ def buildKallistoIndex(infile, outfile):
     statement = '''kallisto index -i %(outfile)s %(infile)s > kallisto_index.log'''
     P.run()
 
-# ---------------------------------------------------
+#fetching BAMs via .remote
 @follows(mkdir("kalisto_quant"))
 @transform(["input_files.dir/*.remote", "input_files.dir/*.bam"],
            regex(".+/(.+).(?:remote|bam)"),
@@ -114,8 +96,6 @@ def runKalistoOnRemoteBAM(infiles, outfile):
     P.run()
     
 
-# ---------------------------------------------------
-#
 @merge(runKalistoOnRemoteBAM, "counts_table.tsv.gz")
 def mergeCounts(infiles, outfile):
 
@@ -144,12 +124,6 @@ def mergeCounts(infiles, outfile):
 #                       --stdout %(outfile)s.log'''
 #	""" 
 #	P.run()
-
-# ---------------------------------------------------
-# Generic pipeline tasks
-@follows(mergeCounts)
-def full():
-    pass
 
 
 @follows(mkdir("report"))
